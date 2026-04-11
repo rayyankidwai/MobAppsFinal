@@ -1,4 +1,4 @@
-# FoodieScore – Food Rating App
+# FoodScore – Food Rating App
 
 ## Team Members
 - Rayyan Kidwai  
@@ -38,39 +38,15 @@ FoodieScore is a mobile application that allows users to rate, review, and track
 The app will follow a **component-based architecture using React Native**.
 
 ### Main Components
-- **App.js**  
+- App.js 
   Controls overall application flow and state  
-
-- **Food List Screen**  
+- Food List Screen  
   Displays all saved food entries  
-
-- **Add Food Screen**  
-  Allows users to input new food ratings  
-
-- **Food Card Component**  
-  Displays individual food details (name, rating, review)  
-
-- **State Management**  
-  Uses React state (useState) to store and update food data  
-
-- **Stylesheet**  
+- Add Food Screen 
+  Allows users to input new food ratings
+- Food Card Component 
+  Displays individual food details (name, rating, review) 
+- State Management 
+  Uses React state (useState) to store and update food data 
+- Stylesheet  
   Handles layout, colors, and UI styling  
-
----
-
-## Data Flow
-1. User enters food details  
-2. Data is stored in application state  
-3. Food list updates automatically  
-4. User actions (add/edit/delete) update the UI in real-time  
-
----
-
-## Technology Stack
-- React Native  
-- JavaScript  
-- Expo  
-
----
-
-## Project Structure
