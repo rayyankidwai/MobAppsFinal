@@ -1,1 +1,881 @@
+import React, { Component } from 'react';
+import {
+    Text, View, StyleSheet, TextInput,
+    TouchableHighlight, ScrollView, Dimensions
+} from 'react-native';
+
+let dh = Dimensions.get('window').height;
+let dw = Dimensions.get('window').width;
+
+export default class App extends Component {
+
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            sc: 'splash',
+            srt: 'rating',
+            si: null,
+
+            ni: '',
+            nr: 0,
+            nrs: '',
+            nnt: '',
+
+            em: false,
+
+            ps: [
+                { id: 1, nm: 'Truffle Ramen', rs: 'Umami House', rt: 5, nt: 'Best bowl in Austin, rich broth, perfect noodles.', dt: 'Apr 14, 2026' },
+                { id: 2, nm: 'Tacos al Pastor', rs: 'La Familia', rt: 5, nt: 'Incredible street style, perfect char on the meat.', dt: 'Apr 10, 2026' },
+                { id: 3, nm: 'Margherita Pizza', rs: 'Bella Italia', rt: 4, nt: 'Crispy crust, fresh basil.', dt: 'Apr 5, 2026' },
+                { id: 4, nm: 'Spicy Tonkotsu', rs: 'Noodle Republic', rt: 4, nt: 'Great spice level, would order again.', dt: 'Mar 28, 2026' },
+                { id: 5, nm: 'Butter Chicken', rs: 'Curry Palace', rt: 3, nt: 'Good but could use more depth of flavor.', dt: 'Mar 20, 2026' },
+            ],
+
+            nx: 6,
+        };
+    }
+
+    ch = (sc) => this.setState({ sc });
+
+    getSorted = () => {
+        let arr = [...this.state.ps];
+        if (this.state.srt === 'rating') return arr.sort((a, b) => b.rt - a.rt);
+        if (this.state.srt === 'az') return arr.sort((a, b) => a.nm.localeCompare(b.nm));
+        return arr.sort((a, b) => b.id - a.id);
+    }
+
+    getMax = () => this.state.ps.length ? Math.max(...this.state.ps.map(p => p.rt)) : 0;
+
+    openAdd = () => this.setState({ sc: 'addfood', em: false, ni: '', nr: 0, nrs: '', nnt: '' });
+
+    openEdit = (p) => this.setState({
+        sc: 'addfood',
+        em: true,
+        si: p.id,
+        ni: p.nm,
+        nrs: p.rs,
+        nr: p.rt,
+        nnt: p.nt
+    });
+
+    openDetail = (p) => this.setState({ sc: 'detail', si: p.id });
+
+    saveFood = () => {
+        if (!this.state.ni.trim() || !this.state.nrs.trim() || !this.state.nr) return;
+
+        if (this.state.em) {
+            this.setState({
+                ps: this.state.ps.map(p =>
+                    p.id === this.state.si
+                        ? { ...p, nm: this.state.ni, rs: this.state.nrs, rt: this.state.nr, nt: this.state.nnt }
+                        : p
+                ),
+                sc: 'detail'
+            });
+        } else {
+            let np = {
+                id: this.state.nx,
+                nm: this.state.ni,
+                rs: this.state.nrs,
+                rt: this.state.nr,
+                nt: this.state.nnt,
+                dt: new Date().toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                })
+            };
+
+            this.setState({
+                ps: [np, ...this.state.ps],
+                nx: this.state.nx + 1,
+                sc: 'feed'
+            });
+        }
+    }
+
+    delFood = (id) => {
+        this.setState({
+            ps: this.state.ps.filter(p => p.id !== id),
+            sc: 'feed'
+        });
+    }
+
+    stars = (n, sz = 14) => {
+        return [1, 2, 3, 4, 5].map(i => (
+            <Text
+                key={i}
+                style={{
+                    fontSize: sz,
+                    color: i <= n ? '#f5a623' : '#444'
+                }}
+            >
+                ★
+            </Text>
+        ));
+    }
+
+    starPicker = () => {
+        return [1, 2, 3, 4, 5].map(i => (
+            <TouchableHighlight
+                key={i}
+                onPress={() => this.setState({ nr: i })}
+                underlayColor="transparent"
+            >
+                <Text
+                    style={{
+                        fontSize: 34,
+                        color: i <= this.state.nr ? '#f5a623' : '#555',
+                        marginRight: 4
+                    }}
+                >
+                    {i <= this.state.nr ? '★' : '☆'}
+                </Text>
+            </TouchableHighlight>
+        ));
+    }
+
+    render() {
+
+        let { sc, ps, si, srt, ni, nrs, nr, nnt, em } = this.state;
+
+        let sel = ps.find(p => p.id === si);
+
+        let sorted = this.getSorted();
+
+        let maxRt = this.getMax();
+
+        let avg = ps.length
+            ? (ps.reduce((sum, p) => sum + p.rt, 0) / ps.length).toFixed(1)
+            : '–';
+
+        let rests = new Set(ps.map(p => p.rs)).size;
+
+        let fives = ps.filter(p => p.rt === 5).length;
+
+        return (
+            <View style={s.c}>
+
+                {sc === 'splash' && (
+                    <View style={s.splash}>
+                        <View style={s.splashLogo}>
+                            <Text style={{ fontSize: 44 }}>🍜</Text>
+                        </View>
+
+                        <Text style={s.splashTitle}>FoodieScore</Text>
+
+                        <Text style={s.splashSub}>TRACK · RATE · DISCOVER</Text>
+
+                        <TouchableHighlight
+                            style={s.splashBtn}
+                            onPress={() => this.ch('feed')}
+                            underlayColor="#eee"
+                        >
+                            <Text style={s.splashBtnTxt}>Get Started</Text>
+                        </TouchableHighlight>
+                    </View>
+                )}
+
+                {sc !== 'splash' && (
+                    <View style={s.h}>
+                        <Text style={s.ht}>🍜 FoodieScore</Text>
+                    </View>
+                )}
+
+                {sc === 'feed' && (
+                    <View style={{ flex: 1 }}>
+
+                        <View style={s.chips}>
+                            {['rating', 'az', 'recent'].map(k => (
+                                <TouchableHighlight
+                                    key={k}
+                                    style={[s.chip, srt === k && s.chipOn]}
+                                    onPress={() => this.setState({ srt: k })}
+                                    underlayColor="#4a8c1a"
+                                >
+                                    <Text style={[s.chipTxt, srt === k && s.chipTxtOn]}>
+                                        {k === 'rating'
+                                            ? 'Rating ↓'
+                                            : k === 'az'
+                                                ? 'A–Z'
+                                                : 'Recent'}
+                                    </Text>
+                                </TouchableHighlight>
+                            ))}
+                        </View>
+
+                        <ScrollView
+                            style={{ flex: 1 }}
+                            contentContainerStyle={{ paddingBottom: 80 }}
+                        >
+                            {sorted.map(p => (
+                                <TouchableHighlight
+                                    key={p.id}
+                                    style={s.card}
+                                    onPress={() => this.openDetail(p)}
+                                    underlayColor="#2a2a2a"
+                                >
+                                    <View style={s.cardRow}>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={s.cardName}>{p.nm}</Text>
+                                            <Text style={s.cardRest}>{p.rs}</Text>
+                                            <View style={s.row}>{this.stars(p.rt)}</View>
+                                        </View>
+
+                                        {p.rt === maxRt && maxRt === 5 && (
+                                            <View style={s.badge}>
+                                                <Text style={s.badgeTxt}>⭐ Top</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                </TouchableHighlight>
+                            ))}
+                        </ScrollView>
+
+                        <TouchableHighlight
+                            style={s.fab}
+                            onPress={this.openAdd}
+                            underlayColor="#4a8c1a"
+                        >
+                            <Text style={s.fabTxt}>+</Text>
+                        </TouchableHighlight>
+                    </View>
+                )}
+
+                {sc === 'detail' && sel && (
+                    <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+
+                        <View style={s.detHead}>
+                            <TouchableHighlight
+                                onPress={() => this.ch('feed')}
+                                underlayColor="transparent"
+                            >
+                                <Text style={s.back}>← Back</Text>
+                            </TouchableHighlight>
+
+                            <Text style={s.detName}>{sel.nm}</Text>
+
+                            <Text style={s.detRest}>📍 {sel.rs}</Text>
+
+                            <View style={s.row}>{this.stars(sel.rt, 22)}</View>
+                        </View>
+
+                        <View style={s.detBody}>
+                            <Text style={s.detLabel}>YOUR REVIEW</Text>
+
+                            <Text style={s.detVal}>
+                                "{sel.nt || 'No review added.'}"
+                            </Text>
+
+                            <Text style={[s.detLabel, { marginTop: 16 }]}>
+                                LOGGED ON
+                            </Text>
+
+                            <Text style={s.detVal}>{sel.dt}</Text>
+                        </View>
+
+                        <View style={s.detActions}>
+                            <TouchableHighlight
+                                style={s.btnEdit}
+                                onPress={() => this.openEdit(sel)}
+                                underlayColor="#333"
+                            >
+                                <Text style={s.btnEditTxt}>✏️  Edit</Text>
+                            </TouchableHighlight>
+
+                            <TouchableHighlight
+                                style={s.btnDel}
+                                onPress={() => this.delFood(sel.id)}
+                                underlayColor="#3a1515"
+                            >
+                                <Text style={s.btnDelTxt}>🗑  Delete</Text>
+                            </TouchableHighlight>
+                        </View>
+                    </ScrollView>
+                )}
+
+                {sc === 'addfood' && (
+                    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+
+                        <View style={s.modalHead}>
+                            <TouchableHighlight
+                                onPress={() => this.ch(em ? 'detail' : 'feed')}
+                                underlayColor="transparent"
+                            >
+                                <Text style={s.cancelTxt}>✕ Cancel</Text>
+                            </TouchableHighlight>
+
+                            <Text style={s.modalTitle}>
+                                {em ? 'Edit Entry' : 'Add Food'}
+                            </Text>
+
+                            <TouchableHighlight
+                                onPress={this.saveFood}
+                                underlayColor="transparent"
+                            >
+                                <Text style={s.saveTxt}>
+                                    {em ? 'Update' : 'Save'}
+                                </Text>
+                            </TouchableHighlight>
+                        </View>
+
+                        <Text style={s.lbl}>Food name *</Text>
+
+                        <TextInput
+                            style={s.inp}
+                            placeholder="e.g. Spicy Tonkotsu Ramen"
+                            placeholderTextColor="#555"
+                            value={ni}
+                            onChangeText={t => this.setState({ ni: t })}
+                        />
+
+                        <Text style={s.lbl}>Restaurant *</Text>
+
+                        <TextInput
+                            style={s.inp}
+                            placeholder="e.g. Noodle Republic"
+                            placeholderTextColor="#555"
+                            value={nrs}
+                            onChangeText={t => this.setState({ nrs: t })}
+                        />
+
+                        <Text style={s.lbl}>Rating *</Text>
+
+                        <View style={s.row}>{this.starPicker()}</View>
+
+                        <Text style={s.lbl}>Notes (optional)</Text>
+
+                        <TextInput
+                            style={[s.inp, { height: 90, paddingTop: 12 }]}
+                            placeholder="Add your review..."
+                            placeholderTextColor="#555"
+                            value={nnt}
+                            onChangeText={t => this.setState({ nnt: t })}
+                            multiline
+                        />
+
+                        <TouchableHighlight
+                            style={s.btnSave}
+                            onPress={this.saveFood}
+                            underlayColor="#4a8c1a"
+                        >
+                            <Text style={s.btnSaveTxt}>
+                                {em ? 'Update Entry' : 'Save Entry'}
+                            </Text>
+                        </TouchableHighlight>
+
+                        {em && (
+                            <TouchableHighlight
+                                style={s.btnDelEntry}
+                                onPress={() => this.delFood(si)}
+                                underlayColor="transparent"
+                            >
+                                <Text style={s.btnDelEntryTxt}>
+                                    🗑  Delete this entry
+                                </Text>
+                            </TouchableHighlight>
+                        )}
+                    </ScrollView>
+                )}
+
+                {sc === 'top' && (
+                    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 80 }}>
+                        <Text style={s.sectionHead}>⭐ Top Dishes</Text>
+
+                        <Text style={s.sectionSub}>
+                            Your highest rated meals
+                        </Text>
+
+                        {[...ps].sort((a, b) => b.rt - a.rt).map((p, i) => (
+                            <View key={p.id} style={s.card}>
+                                <View style={s.cardRow}>
+                                    <Text style={{ fontSize: 22, minWidth: 34 }}>
+                                        {['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][i] || `${i + 1}.`}
+                                    </Text>
+
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={s.cardName}>{p.nm}</Text>
+
+                                        <Text style={s.cardRest}>{p.rs}</Text>
+
+                                        <View style={s.row}>
+                                            {this.stars(p.rt)}
+                                        </View>
+                                    </View>
+                                </View>
+                            </View>
+                        ))}
+                    </ScrollView>
+                )}
+
+                {sc === 'profile' && (
+                    <ScrollView
+                        contentContainerStyle={{
+                            alignItems: 'center',
+                            padding: 20,
+                            paddingBottom: 80
+                        }}
+                    >
+
+                        <View style={s.avatar}>
+                            <Text style={{ fontSize: 34 }}>👤</Text>
+                        </View>
+
+                        <Text style={s.profName}>Foodie Explorer</Text>
+
+                        <Text style={s.profSub}>FoodieScore Member</Text>
+
+                        <View style={s.statGrid}>
+                            {[
+                                { v: String(ps.length), l: 'Foods Rated' },
+                                { v: avg, l: 'Avg Rating' },
+                                { v: String(rests), l: 'Restaurants' },
+                                { v: String(fives), l: '5-Star Dishes' },
+                            ].map(st => (
+                                <View key={st.l} style={s.statCard}>
+                                    <Text style={s.statVal}>{st.v}</Text>
+                                    <Text style={s.statLbl}>{st.l}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    </ScrollView>
+                )}
+
+                {sc !== 'splash' && (
+                    <View style={s.bn}>
+                        {[
+                            { k: 'feed', ico: '🏠', lbl: 'Home' },
+                            { k: 'top', ico: '⭐', lbl: 'Top' },
+                            { k: 'addfood', ico: '➕', lbl: 'Add', fn: this.openAdd },
+                            { k: 'profile', ico: '👤', lbl: 'Profile' },
+                        ].map(t => (
+                            <TouchableHighlight
+                                key={t.k}
+                                style={s.nb}
+                                onPress={t.fn || (() => this.ch(t.k))}
+                                underlayColor="#4a8c1a"
+                            >
+                                <View style={s.nbInner}>
+                                    <Text style={{ fontSize: 20 }}>{t.ico}</Text>
+
+                                    <Text
+                                        style={[
+                                            s.nt,
+                                            sc === t.k && { color: '#97C459' }
+                                        ]}
+                                    >
+                                        {t.lbl}
+                                    </Text>
+                                </View>
+                            </TouchableHighlight>
+                        ))}
+                    </View>
+                )}
+
+            </View>
+        );
+    }
+}
+
+const s = StyleSheet.create({
+
+    c: {
+        height: dh,
+        width: dw,
+        backgroundColor: '#111'
+    },
+
+    splash: {
+        flex: 1,
+        backgroundColor: '#3B6D11',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12
+    },
+
+    splashLogo: {
+        width: 88,
+        height: 88,
+        borderRadius: 44,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 8
+    },
+
+    splashTitle: {
+        color: '#fff',
+        fontSize: 34,
+        fontWeight: '800',
+        letterSpacing: -0.5
+    },
+
+    splashSub: {
+        color: 'rgba(255,255,255,0.65)',
+        fontSize: 13,
+        letterSpacing: 2,
+        marginBottom: 12
+    },
+
+    splashBtn: {
+        backgroundColor: '#fff',
+        paddingHorizontal: 48,
+        paddingVertical: 16,
+        borderRadius: 30,
+        marginTop: 16
+    },
+
+    splashBtnTxt: {
+        color: '#27500A',
+        fontSize: 17,
+        fontWeight: '700'
+    },
+
+    h: {
+        height: 56,
+        backgroundColor: '#1a1a1a',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: '#2a2a2a'
+    },
+
+    ht: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#fff'
+    },
+
+    chips: {
+        flexDirection: 'row',
+        gap: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 10
+    },
+
+    chip: {
+        paddingHorizontal: 14,
+        paddingVertical: 6,
+        borderRadius: 20,
+        backgroundColor: '#222'
+    },
+
+    chipOn: {
+        backgroundColor: '#639922'
+    },
+
+    chipTxt: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: '#aaa'
+    },
+
+    chipTxtOn: {
+        color: '#fff'
+    },
+
+    card: {
+        backgroundColor: '#1e1e1e',
+        borderRadius: 14,
+        padding: 14,
+        marginHorizontal: 12,
+        marginBottom: 8
+    },
+
+    cardRow: {
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
+
+    cardName: {
+        color: '#fff',
+        fontSize: 15,
+        fontWeight: '600'
+    },
+
+    cardRest: {
+        color: '#aaa',
+        fontSize: 12,
+        marginTop: 2
+    },
+
+    row: {
+        flexDirection: 'row',
+        marginTop: 6
+    },
+
+    badge: {
+        backgroundColor: '#f5a623',
+        borderRadius: 10,
+        paddingHorizontal: 8,
+        paddingVertical: 3
+    },
+
+    badgeTxt: {
+        color: '#fff',
+        fontSize: 11,
+        fontWeight: '700'
+    },
+
+    fab: {
+        position: 'absolute',
+        bottom: 72,
+        right: 20,
+        width: 54,
+        height: 54,
+        borderRadius: 27,
+        backgroundColor: '#639922',
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
+
+    fabTxt: {
+        color: '#fff',
+        fontSize: 30,
+        lineHeight: 34
+    },
+
+    detHead: {
+        backgroundColor: '#3B6D11',
+        padding: 16,
+        paddingBottom: 20
+    },
+
+    back: {
+        color: '#fff',
+        fontSize: 14,
+        marginBottom: 8
+    },
+
+    detName: {
+        color: '#fff',
+        fontSize: 24,
+        fontWeight: '800'
+    },
+
+    detRest: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 14,
+        marginTop: 2
+    },
+
+    detBody: {
+        padding: 16
+    },
+
+    detLabel: {
+        fontSize: 11,
+        letterSpacing: 1,
+        color: '#aaa',
+        textTransform: 'uppercase'
+    },
+
+    detVal: {
+        color: '#fff',
+        fontSize: 15,
+        marginTop: 4
+    },
+
+    detActions: {
+        flexDirection: 'row',
+        gap: 10,
+        padding: 16
+    },
+
+    btnEdit: {
+        flex: 1,
+        backgroundColor: '#2a2a2a',
+        borderRadius: 12,
+        paddingVertical: 14,
+        alignItems: 'center'
+    },
+
+    btnEditTxt: {
+        color: '#fff',
+        fontSize: 15,
+        fontWeight: '600'
+    },
+
+    btnDel: {
+        flex: 1,
+        backgroundColor: '#2a1515',
+        borderRadius: 12,
+        paddingVertical: 14,
+        alignItems: 'center'
+    },
+
+    btnDelTxt: {
+        color: '#e06060',
+        fontSize: 15,
+        fontWeight: '600'
+    },
+
+    modalHead: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: '#2a2a2a',
+        paddingBottom: 14
+    },
+
+    cancelTxt: {
+        color: '#aaa',
+        fontSize: 15,
+        minWidth: 72
+    },
+
+    modalTitle: {
+        flex: 1,
+        textAlign: 'center',
+        color: '#fff',
+        fontSize: 17,
+        fontWeight: '700'
+    },
+
+    saveTxt: {
+        color: '#639922',
+        fontSize: 15,
+        fontWeight: '600',
+        minWidth: 72,
+        textAlign: 'right'
+    },
+
+    lbl: {
+        color: '#aaa',
+        fontSize: 12,
+        marginBottom: 6,
+        marginTop: 4
+    },
+
+    inp: {
+        backgroundColor: '#2a2a2a',
+        borderWidth: 1,
+        borderColor: '#333',
+        borderRadius: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        color: '#fff',
+        fontSize: 15,
+        marginBottom: 14
+    },
+
+    btnSave: {
+        backgroundColor: '#639922',
+        borderRadius: 14,
+        paddingVertical: 14,
+        alignItems: 'center',
+        marginTop: 8
+    },
+
+    btnSaveTxt: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '700'
+    },
+
+    btnDelEntry: {
+        alignItems: 'center',
+        paddingVertical: 12
+    },
+
+    btnDelEntryTxt: {
+        color: '#e06060',
+        fontSize: 14
+    },
+
+    sectionHead: {
+        color: '#fff',
+        fontSize: 22,
+        fontWeight: '700',
+        marginBottom: 4
+    },
+
+    sectionSub: {
+        color: '#aaa',
+        fontSize: 13,
+        marginBottom: 16
+    },
+
+    avatar: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: '#639922',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 8
+    },
+
+    profName: {
+        color: '#fff',
+        fontSize: 20,
+        fontWeight: '700'
+    },
+
+    profSub: {
+        color: '#aaa',
+        fontSize: 13,
+        marginBottom: 16
+    },
+
+    statGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+        justifyContent: 'center',
+        width: '100%',
+        marginTop: 8
+    },
+
+    statCard: {
+        backgroundColor: '#1e1e1e',
+        borderRadius: 12,
+        padding: 16,
+        alignItems: 'center',
+        width: '46%'
+    },
+
+    statVal: {
+        color: '#fff',
+        fontSize: 26,
+        fontWeight: '700'
+    },
+
+    statLbl: {
+        color: '#aaa',
+        fontSize: 12,
+        marginTop: 4
+    },
+
+    bn: {
+        height: 60,
+        width: dw,
+        backgroundColor: '#1a1a1a',
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        borderTopWidth: 1,
+        borderTopColor: '#2a2a2a',
+        position: 'absolute',
+        bottom: 0
+    },
+
+    nb: {
+        padding: 8
+    },
+
+    nbInner: {
+        alignItems: 'center',
+        gap: 2
+    },
+
+    nt: {
+        fontSize: 10,
+        color: '#555',
+        fontWeight: '500'
+    },
+});
+
 
